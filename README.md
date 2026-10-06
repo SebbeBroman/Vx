@@ -271,6 +271,7 @@ ______________________________________________________________________
 
 - **`vx-analyzer`**: Language Server Protocol (LSP) providing diagnostics, hover tooltips, and go-to-definition.
 - **`vscode-vx`**: Official VS Code extension providing syntax highlighting and LSP integration.
+- **`emacs-vx`**: Emacs major mode (`vx-mode`) providing syntax highlighting and `vx-format`-style indentation.
 - **`vx-format`**: Official AST-aware code formatter for `.vx` files.
 - **`vx-opt`**: Specialized driver for testing and inspecting passes on the custom `vx` MLIR dialect.
 
@@ -294,6 +295,7 @@ examples/             Example programs (including Llama 2 forward pass in llama.
 docs/                 Language specification, tutorials, and architecture designs
 vx-analyzer/          Language server (LSP)
 vscode-vx/            VS Code extension
+emacs-vx/             Emacs major mode
 tests/                Unit, integration, middle-end, and differential CUDA test suites
 ```
 
