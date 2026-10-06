@@ -189,18 +189,20 @@ w : &TransformerWeights) -> i32 {
       rmsnorm(s.xb, s.x, vx_advance_ptr(w.rms_att_weight, l * dim), dim);
 
       // 2.2 QKV Projections (using native Tensor matmul `@`)
+      // The checkpoint stores each matrix as [output][input], but `x @ W`
+      // needs W as [input][output], so every layer matrix is transposed here.
       let mut wq_l = Tensor<f32, [?, ?]>::uninit([dim, dim]);
       let mut wk_l = Tensor<f32, [?, ?]>::uninit([dim, kv_dim]);
       let mut wv_l = Tensor<f32, [?, ?]>::uninit([dim, kv_dim]);
       for row in 0..dim {
         for col in 0..dim {
-          wq_l[row][col] = w.wq[(l * dim + row) * dim + col];
+          wq_l[row][col] = w.wq[l * dim * dim + col * dim + row];
         }
         for col in 0..kv_dim {
-          wk_l[row][col] = w.wk[(l * dim + row) * kv_dim + col];
+          wk_l[row][col] = w.wk[l * kv_dim * dim + col * dim + row];
         }
         for col in 0..kv_dim {
-          wv_l[row][col] = w.wv[(l * dim + row) * kv_dim + col];
+          wv_l[row][col] = w.wv[l * kv_dim * dim + col * dim + row];
         }
       }
 
@@ -326,7 +328,7 @@ w : &TransformerWeights) -> i32 {
       let mut wo_l = Tensor<f32, [?, ?]>::uninit([dim, dim]);
       for row in 0..dim {
         for col in 0..dim {
-          wo_l[row][col] = w.wo[(l * dim + row) * dim + col];
+          wo_l[row][col] = w.wo[l * dim * dim + col * dim + row];
         }
       }
 
@@ -350,13 +352,13 @@ w : &TransformerWeights) -> i32 {
       let mut w3_l = Tensor<f32, [?, ?]>::uninit([dim, hidden_dim]);
       for row in 0..dim {
         for col in 0..hidden_dim {
-          w1_l[row][col] = w.w1[(l * dim + row) * hidden_dim + col];
-          w3_l[row][col] = w.w3[(l * dim + row) * hidden_dim + col];
+          w1_l[row][col] = w.w1[l * hidden_dim * dim + col * dim + row];
+          w3_l[row][col] = w.w3[l * hidden_dim * dim + col * dim + row];
         }
       }
       for row in 0..hidden_dim {
         for col in 0..dim {
-          w2_l[row][col] = w.w2[(l * hidden_dim + row) * dim + col];
+          w2_l[row][col] = w.w2[l * dim * hidden_dim + col * hidden_dim + row];
         }
       }
 
@@ -375,7 +377,8 @@ w : &TransformerWeights) -> i32 {
       // SwiGLU activation
       for i in 0..hidden_dim {
         let mut val : f32 = t_hb[0][i];
-        val = val * (1.0 / (1.0 + 0.0 - val.exp()));
+        let neg_val : f32 = 0.0 - val;
+        val = val * (1.0 / (1.0 + neg_val.exp()));
         val = val * t_hb2[0][i];
         s.hb[i] = val;
       }
